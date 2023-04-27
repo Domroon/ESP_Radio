@@ -59,3 +59,7 @@ https://copyprogramming.com/howto/python-code-for-internet-radio-streaming-a-com
 https://github.com/johnrickman/LiquidCrystal_I2C
 
 
+## Arduino String Operationen
+https://arduinogetstarted.com/de/reference/arduino-string-remove
+
+

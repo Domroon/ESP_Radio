@@ -14,10 +14,32 @@ char password[] = "6ER6bXskskZ";
 unsigned long menuMillis;
 unsigned long displayMillis;
 
-String Text;
+String streamtitle;
 int infotextLen;
-String infotext_change;
 int scrolls;
+int title_from = 0;
+int title_to = 16;
+
+
+// audio functions overwrite
+
+void audio_info(const char *info){
+    Serial.print("info        "); Serial.println(info);
+}
+
+void audio_showstreamtitle(const char *info){
+    streamtitle = info;
+    show_text(0, 1, streamtitle.substring(0,infotextLen));
+    infotextLen = streamtitle.length();
+}
+
+void audio_showstation(const char *info){
+    String station_name = info;
+    show_text(0, 0, station_name.substring(0,16));
+}
+
+
+// init functions
 
 void initWiFi() {
     Serial.begin(115200);
@@ -34,77 +56,63 @@ void initWiFi() {
     Serial.println(WiFi.localIP());
 }
 
-void audio_info(const char *info){
-    Serial.print("info        "); Serial.println(info);
+
+// general purpose functions
+
+void show_text(int col, int row, String text) {
+    lcd.setCursor(col, row);
+    lcd.print(text);
 }
 
-void audio_showstreamtitle(const char *info){
-    Text = info;
-    infotext_change = info;
-    lcd.setCursor(0,1);
-    lcd.print(Text.substring(0,16));
-    infotextLen = Text.length() + 1;
-}
 
-void audio_showstation(const char *info){
-    String Text = info;
-    lcd.setCursor(0,0);
-    lcd.print(Text.substring(0,16));
-}
+// loop functions
 
 void menu_loop() {
     if (millis() - menuMillis >= 10000) {
         audio.connecttohost("http://st01.dlf.de/dlf/01/128/mp3/stream.mp3");
-        // Serial.println("HALLO WELT :)");
         menuMillis = millis();
     }
 }
 
 void display_scroll(int row) {
     if(millis() - displayMillis >= 500) {
-        infotext_change.remove(0, 1);
-        lcd.setCursor(0, row);
-        lcd.print("                ");
-        lcd.setCursor(0, row);
-        lcd.print(infotext_change);
-        Serial.println(infotext_change);
+        // infotext_change.remove(0, 1);
+        show_text(0, row, "                ");
+        show_text(0, row, streamtitle.substring(title_from, title_to));
 
         displayMillis = millis();
         scrolls = scrolls + 1;
+        title_from = title_from + 1;
+        title_to = title_to + 1;
     }
 
-    if (scrolls == infotextLen) {
-        infotext_change = Text;
-        lcd.setCursor(0, row);
-        lcd.print("                ");
-        lcd.setCursor(0, row);
-        lcd.print(infotext_change);
+    if (scrolls == infotextLen + 1) {
+        title_from = 0;
+        title_to = 16;
+        show_text(0, row, "                ");
+        show_text(0, row, streamtitle.substring(title_from, title_to));
         scrolls = 0;
     }
 }
 
+
+
 void setup() {
     lcd.init();                      
     lcd.backlight();
-    lcd.setCursor(0,0);
-    lcd.print("ESP Radio");
-    lcd.setCursor(0,1);
-    lcd.print("Connect to WLAN");
+    
+    show_text(0, 0, "ESP Radio");
+    show_text(0, 1, "Connect to WLAN");
 
     menuMillis = millis();
     displayMillis = millis();
     initWiFi();
-
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print("ESP Radio");
-    lcd.setCursor(0,1);
-    lcd.print("Connected");
     
     audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
-    audio.setVolume(3);
+    audio.setVolume(4);
     audio.connecttohost("http://wdr-1live-live.icecast.wdr.de/wdr/1live/live/mp3/128/stream.mp3");
 }
+
 
 void loop() {
     audio.loop();

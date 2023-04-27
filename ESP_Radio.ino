@@ -6,6 +6,8 @@
 #define I2S_BCLK      27  // connect to DAC pin BCK
 #define I2S_LRC       25  // connect to DAC pin LCK
 
+#define STATIONS 25
+
 Audio audio;
 LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
@@ -19,6 +21,11 @@ int infotextLen;
 int scrolls;
 int title_from = 0;
 int title_to = 16;
+
+uint8_t stationnumber = 0;
+uint8_t actStation = stationnumber;
+const char* stationurl[STATIONS];
+String stationname[STATIONS];
 
 
 // audio functions overwrite
@@ -34,8 +41,7 @@ void audio_showstreamtitle(const char *info){
 }
 
 void audio_showstation(const char *info){
-    String station_name = info;
-    show_text(0, 0, station_name.substring(0,16));
+    show_text(0, 0, stationname[stationnumber]);
 }
 
 
@@ -110,7 +116,9 @@ void setup() {
     
     audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
     audio.setVolume(4);
-    audio.connecttohost("http://wdr-1live-live.icecast.wdr.de/wdr/1live/live/mp3/128/stream.mp3");
+    // audio.connecttohost("http://wdr-1live-live.icecast.wdr.de/wdr/1live/live/mp3/128/stream.mp3");
+    setup_senderList();
+    audio.connecttohost(stationurl[stationnumber]);
 }
 
 

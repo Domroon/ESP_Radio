@@ -27,6 +27,16 @@ uint8_t actStation = stationnumber;
 const char* stationurl[STATIONS];
 String stationname[STATIONS];
 
+int button_up = 35;
+int button_down = 34;
+int button_enter = 39;
+
+bool button_up_is_pressed = false;
+bool button_down_is_pressed = false;
+bool button_enter_is_pressed = false;
+
+String displayView[2];
+
 
 // audio functions overwrite
 
@@ -74,17 +84,60 @@ void show_text(int col, int row, String text) {
 // loop functions
 
 void menu_loop() {
-    if (millis() - menuMillis >= 10000) {
-        audio.connecttohost("http://st01.dlf.de/dlf/01/128/mp3/stream.mp3");
-        menuMillis = millis();
+    // if (millis() - menuMillis >= 10000) {
+    //     audio.connecttohost("http://st01.dlf.de/dlf/01/128/mp3/stream.mp3");
+    //     menuMillis = millis();
+    // }
+    show_text(0, 0, displayView[0]);
+    show_text(0, 1, displayView[1]);
+
+}
+
+
+void check_buttons_loop() {
+    // Button UP
+    if(digitalRead(button_up) && !button_up_is_pressed){
+        Serial.println("UP button is pressed");
+        button_up_is_pressed = true;
+        delay(100);
+    }
+    if(!digitalRead(button_up) && button_up_is_pressed){
+        Serial.println("UP button has been released");
+        button_up_is_pressed = false;
+        delay(100);
+    }
+
+    // Button DOWN
+    if(digitalRead(button_down) && !button_down_is_pressed){
+        Serial.println("DOWN button is pressed");
+        button_down_is_pressed = true;
+        delay(100);
+    }
+    if(!digitalRead(button_down) && button_down_is_pressed){
+        Serial.println("DOWN button has been released");
+        button_down_is_pressed = false;
+        delay(100);
+    }
+    
+    // Button ENTER
+    if(digitalRead(button_enter) && !button_enter_is_pressed){
+        Serial.println("ENTER button is pressed");
+        button_enter_is_pressed = true;
+        delay(100);
+    }
+    if(!digitalRead(button_enter) && button_enter_is_pressed){
+        Serial.println("ENTER button has been released");
+        button_enter_is_pressed = false;
+        delay(100);
     }
 }
 
-void display_scroll(int row) {
+
+void show_station_loop() {
     if(millis() - displayMillis >= 500) {
-        // infotext_change.remove(0, 1);
-        show_text(0, row, "                ");
-        show_text(0, row, streamtitle.substring(title_from, title_to));
+        show_text(0, 0, stationname[stationnumber]);
+        show_text(0, 1, "                ");
+        show_text(0, 1, streamtitle.substring(title_from, title_to));
 
         displayMillis = millis();
         scrolls = scrolls + 1;
@@ -95,8 +148,8 @@ void display_scroll(int row) {
     if (scrolls == infotextLen + 1) {
         title_from = 0;
         title_to = 16;
-        show_text(0, row, "                ");
-        show_text(0, row, streamtitle.substring(title_from, title_to));
+        show_text(0, 1, "                ");
+        show_text(0, 1, streamtitle.substring(title_from, title_to));
         scrolls = 0;
     }
 }
@@ -104,6 +157,11 @@ void display_scroll(int row) {
 
 
 void setup() {
+    // init buttons
+    pinMode(button_up, INPUT);
+    pinMode(button_down, INPUT);
+    pinMode(button_enter, INPUT);
+
     lcd.init();                      
     lcd.backlight();
     
@@ -119,11 +177,16 @@ void setup() {
     // audio.connecttohost("http://wdr-1live-live.icecast.wdr.de/wdr/1live/live/mp3/128/stream.mp3");
     setup_senderList();
     audio.connecttohost(stationurl[stationnumber]);
+
+    //display menu
+    displayView[0] = stationname[0];
+    displayView[1] = stationname[1];
 }
 
 
 void loop() {
     audio.loop();
     // menu_loop();
-    display_scroll(1);
+    show_station_loop();
+    check_buttons_loop();
 }

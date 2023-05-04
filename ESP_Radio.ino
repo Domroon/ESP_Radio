@@ -37,6 +37,15 @@ bool button_enter_is_pressed = false;
 
 String displayView[2];
 
+// Task for Display Loop
+TaskHandle_t audioLoopTask;
+
+void runAudioLoop(void* parameter) {
+    while(1){
+        audio.loop();
+    }
+}
+
 
 // audio functions overwrite
 
@@ -104,6 +113,7 @@ void check_buttons_loop() {
     if(!digitalRead(button_up) && button_up_is_pressed){
         Serial.println("UP button has been released");
         button_up_is_pressed = false;
+        menuMillis = millis();
         delay(100);
     }
 
@@ -116,6 +126,7 @@ void check_buttons_loop() {
     if(!digitalRead(button_down) && button_down_is_pressed){
         Serial.println("DOWN button has been released");
         button_down_is_pressed = false;
+        menuMillis = millis();
         delay(100);
     }
     
@@ -128,6 +139,7 @@ void check_buttons_loop() {
     if(!digitalRead(button_enter) && button_enter_is_pressed){
         Serial.println("ENTER button has been released");
         button_enter_is_pressed = false;
+        menuMillis = millis();
         delay(100);
     }
 }
@@ -155,7 +167,6 @@ void show_station_loop() {
 }
 
 
-
 void setup() {
     // init buttons
     pinMode(button_up, INPUT);
@@ -168,7 +179,7 @@ void setup() {
     show_text(0, 0, "ESP Radio");
     show_text(0, 1, "Connect to WLAN");
 
-    menuMillis = millis();
+    menuMillis = -2000;
     displayMillis = millis();
     initWiFi();
     
@@ -181,12 +192,28 @@ void setup() {
     //display menu
     displayView[0] = stationname[0];
     displayView[1] = stationname[1];
+
+    // start audio loop
+    xTaskCreatePinnedToCore(
+        runAudioLoop,
+        "AudioLoop",
+        10000,
+        NULL,
+        1,
+        &audioLoopTask,
+        1
+    );
 }
 
 
 void loop() {
-    audio.loop();
-    // menu_loop();
-    show_station_loop();
+    if (button_up_is_pressed 
+        || button_down_is_pressed 
+        || button_enter_is_pressed 
+        || millis() - menuMillis >= 0 && millis() - menuMillis <= 2000){
+        menu_loop();
+    } else {
+        show_station_loop();
+    }
     check_buttons_loop();
 }

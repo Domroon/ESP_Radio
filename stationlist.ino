@@ -8,7 +8,7 @@ void setup_senderList()
   stationurl[1] = "http://icecast.ndr.de/ndr/ndr2/niedersachsen/mp3/128/stream.mp3";
   stationname[2] = "NDR1 Hannover";
   stationurl[2] = "http://icecast.ndr.de/ndr/ndr1niedersachsen/hannover/mp3/128/stream.mp3";
-  stationname[3] = "WDR1";
+  stationname[3] = "1Live";
   stationurl[3] = "http://wdr-1live-live.icecast.wdr.de/wdr/1live/live/mp3/128/stream.mp3";
   stationname[4] = "WDR COSMO";
   stationurl[4] = "http://wdr-cosmo-live.icecast.wdr.de/wdr/cosmo/live/mp3/128/stream.mp3";

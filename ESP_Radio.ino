@@ -35,10 +35,16 @@ bool button_up_is_pressed = false;
 bool button_down_is_pressed = false;
 bool button_enter_is_pressed = false;
 
-String displayView[2];
+// Display Menu
+// String displayView[2];
+int top_station = 0;
+int bottom_station = 1;
+int cursor = 0;
+int scrollWaitMillis = 0;
 
-// Task for Display Loop
+// Task for Audio Loop
 TaskHandle_t audioLoopTask;
+TaskHandle_t showStreamTitle;
 
 void runAudioLoop(void* parameter) {
     while(1){
@@ -53,13 +59,15 @@ void audio_info(const char *info){
     Serial.print("info        "); Serial.println(info);
 }
 
-void audio_showstreamtitle(const char *info){
-    streamtitle = info;
-    show_text(0, 1, streamtitle.substring(0,infotextLen));
-    infotextLen = streamtitle.length();
-}
+// void audio_showstreamtitle(const char *info){
+//     delay(600);
+//     streamtitle = info;
+//     show_text(0, 1, streamtitle.substring(0,infotextLen));
+//     infotextLen = streamtitle.length();
+// }
 
 void audio_showstation(const char *info){
+    delay(300);
     show_text(0, 0, stationname[stationnumber]);
 }
 
@@ -97,9 +105,39 @@ void menu_loop() {
     //     audio.connecttohost("http://st01.dlf.de/dlf/01/128/mp3/stream.mp3");
     //     menuMillis = millis();
     // }
-    show_text(0, 0, displayView[0]);
-    show_text(0, 1, displayView[1]);
+    show_text(0, 0, ">");
+    show_text(1, 0, stationname[top_station]);
+    show_text(1, 1, stationname[bottom_station]);
+    if (bottom_station > STATIONS){
+        top_station = 0;
+        bottom_station = 1;
+    }
+    if (top_station < 0){
+        top_station = STATIONS - 1;
+        bottom_station = STATIONS;
+    }
 
+    if (button_down_is_pressed
+        && millis() - scrollWaitMillis >= 200) {
+        lcd.clear();
+        top_station++;
+        bottom_station++;
+        scrollWaitMillis = millis();
+    }
+    if (button_up_is_pressed
+        && millis() - scrollWaitMillis >= 200) {
+        lcd.clear();
+        top_station--;
+        bottom_station--;
+        scrollWaitMillis = millis();
+    }
+    if (button_enter_is_pressed
+        && millis() - scrollWaitMillis >= 1000){
+        lcd.clear();
+        audio.connecttohost(stationurl[top_station]);
+        scrollWaitMillis = millis();
+        delay(1000);
+    }
 }
 
 
@@ -108,46 +146,46 @@ void check_buttons_loop() {
     if(digitalRead(button_up) && !button_up_is_pressed){
         Serial.println("UP button is pressed");
         button_up_is_pressed = true;
-        delay(100);
+        delay(200);
     }
     if(!digitalRead(button_up) && button_up_is_pressed){
         Serial.println("UP button has been released");
         button_up_is_pressed = false;
         menuMillis = millis();
-        delay(100);
+        delay(200);
     }
 
     // Button DOWN
     if(digitalRead(button_down) && !button_down_is_pressed){
         Serial.println("DOWN button is pressed");
         button_down_is_pressed = true;
-        delay(100);
+        delay(200);
     }
     if(!digitalRead(button_down) && button_down_is_pressed){
         Serial.println("DOWN button has been released");
         button_down_is_pressed = false;
         menuMillis = millis();
-        delay(100);
+        delay(200);
     }
     
     // Button ENTER
     if(digitalRead(button_enter) && !button_enter_is_pressed){
         Serial.println("ENTER button is pressed");
         button_enter_is_pressed = true;
-        delay(100);
+        delay(200);
     }
     if(!digitalRead(button_enter) && button_enter_is_pressed){
         Serial.println("ENTER button has been released");
         button_enter_is_pressed = false;
-        menuMillis = millis();
-        delay(100);
+        menuMillis = 0;
     }
 }
 
 
 void show_station_loop() {
     if(millis() - displayMillis >= 500) {
-        show_text(0, 0, stationname[stationnumber]);
+        lcd.clear();
+        show_text(0, 0, stationname[top_station]);
         show_text(0, 1, "                ");
         show_text(0, 1, streamtitle.substring(title_from, title_to));
 
@@ -190,8 +228,8 @@ void setup() {
     audio.connecttohost(stationurl[stationnumber]);
 
     //display menu
-    displayView[0] = stationname[0];
-    displayView[1] = stationname[1];
+    // displayView[0] = stationname[0];
+    // displayView[1] = stationname[1];
 
     // start audio loop
     xTaskCreatePinnedToCore(

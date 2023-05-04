@@ -6,7 +6,7 @@
 #define I2S_BCLK      27  // connect to DAC pin BCK
 #define I2S_LRC       25  // connect to DAC pin LCK
 
-#define STATIONS 25
+#define STATIONS 17
 
 Audio audio;
 LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars and 2 line display

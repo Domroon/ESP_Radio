@@ -2,6 +2,10 @@
 #include <Audio.h>
 #include <LiquidCrystal_I2C.h>
 
+#include "FS.h"
+#include "SD.h"
+#include "SPI.h"
+
 #define I2S_DOUT      26  // connect to DAC pin DIN
 #define I2S_BCLK      27  // connect to DAC pin BCK
 #define I2S_LRC       25  // connect to DAC pin LCK
@@ -87,6 +91,33 @@ void initWiFi() {
     Serial.println("Connected");
     Serial.print("IP-Address: ");
     Serial.println(WiFi.localIP());
+}
+
+void initSD(){
+    if(!SD.begin(5)) {
+        Serial.println("Card Mount Failed");
+        return;
+    }
+    uint8_t cardType = SD.cardType();
+
+    if(cardType == CARD_NONE){
+        Serial.println("No SD card attached");
+        return;
+    }
+
+    Serial.print("SD Card Type: ");
+    if(cardType == CARD_MMC){
+        Serial.println("MMC");
+    } else if(cardType == CARD_SD) {
+        Serial.println("SDSC");
+    } else if(cardType == CARD_SDHC) {
+        Serial.println("SDHC");
+    } else {
+        Serial.println("UNKOWN");
+    }
+
+    uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+    Serial.printf("SD Card Size: %lluMB\n",cardSize);
 }
 
 
@@ -206,52 +237,54 @@ void show_station_loop() {
 
 
 void setup() {
-    // init buttons
-    pinMode(button_up, INPUT);
-    pinMode(button_down, INPUT);
-    pinMode(button_enter, INPUT);
+    Serial.begin(115200);
+    initSD();
+    // // init buttons
+    // pinMode(button_up, INPUT);
+    // pinMode(button_down, INPUT);
+    // pinMode(button_enter, INPUT);
 
-    lcd.init();                      
-    lcd.backlight();
+    // lcd.init();                      
+    // lcd.backlight();
     
-    show_text(0, 0, "ESP Radio");
-    show_text(0, 1, "Connect to WLAN");
+    // show_text(0, 0, "ESP Radio");
+    // show_text(0, 1, "Connect to WLAN");
 
-    menuMillis = -2000;
-    displayMillis = millis();
-    initWiFi();
+    // menuMillis = -2000;
+    // displayMillis = millis();
+    // initWiFi();
     
-    audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
-    audio.setVolume(4);
-    // audio.connecttohost("http://wdr-1live-live.icecast.wdr.de/wdr/1live/live/mp3/128/stream.mp3");
-    setup_senderList();
-    audio.connecttohost(stationurl[stationnumber]);
+    // audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
+    // // audio.setVolume(4);
+    // // audio.connecttohost("http://wdr-1live-live.icecast.wdr.de/wdr/1live/live/mp3/128/stream.mp3");
+    // setup_senderList();
+    // audio.connecttohost(stationurl[stationnumber]);
 
-    //display menu
-    // displayView[0] = stationname[0];
-    // displayView[1] = stationname[1];
+    // //display menu
+    // // displayView[0] = stationname[0];
+    // // displayView[1] = stationname[1];
 
-    // start audio loop
-    xTaskCreatePinnedToCore(
-        runAudioLoop,
-        "AudioLoop",
-        10000,
-        NULL,
-        1,
-        &audioLoopTask,
-        1
-    );
+    // // start audio loop
+    // xTaskCreatePinnedToCore(
+    //     runAudioLoop,
+    //     "AudioLoop",
+    //     10000,
+    //     NULL,
+    //     1,
+    //     &audioLoopTask,
+    //     1
+    // );
 }
 
 
 void loop() {
-    if (button_up_is_pressed 
-        || button_down_is_pressed 
-        || button_enter_is_pressed 
-        || millis() - menuMillis >= 0 && millis() - menuMillis <= 2000){
-        menu_loop();
-    } else {
-        show_station_loop();
-    }
-    check_buttons_loop();
+    // if (button_up_is_pressed 
+    //     || button_down_is_pressed 
+    //     || button_enter_is_pressed 
+    //     || millis() - menuMillis >= 0 && millis() - menuMillis <= 2000){
+    //     menu_loop();
+    // } else {
+    //     show_station_loop();
+    // }
+    // check_buttons_loop();
 }

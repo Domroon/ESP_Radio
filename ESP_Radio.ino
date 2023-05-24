@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <WiFi.h>
 #include <Audio.h>
 #include <LiquidCrystal_I2C.h>
@@ -5,6 +6,11 @@
 #include "FS.h"
 #include "SD.h"
 #include "SPI.h"
+
+extern "C" {
+  #include "dict.h"
+}
+
 
 #define I2S_DOUT      26  // connect to DAC pin DIN
 #define I2S_BCLK      27  // connect to DAC pin BCK
@@ -120,6 +126,10 @@ void initSD(){
     Serial.printf("SD Card Size: %lluMB\n",cardSize);
 }
 
+void initDict(Dict* dict){
+    dict->length = 0;
+    dict->firstItem = NULL;
+}
 
 // general purpose functions
 
@@ -128,6 +138,19 @@ void show_text(int col, int row, String text) {
     lcd.print(text);
 }
 
+void showDict(Dict* dict){
+    Item* currentItem = (Item*) dict->firstItem;
+    if (dict->length == 0){
+        Serial.println("Dict is empty");
+        return;
+    }
+    while(currentItem != NULL){
+        Serial.print(currentItem->key);
+        Serial.print(" : ");
+        Serial.println(currentItem->value);
+        currentItem = (Item*) currentItem->next;
+    }
+}
 
 // loop functions
 
@@ -239,6 +262,13 @@ void show_station_loop() {
 void setup() {
     Serial.begin(115200);
     initSD();
+    Dict* dict = (Dict*) malloc(sizeof(Dict));
+    initDict(dict);
+    addItem("42", "test1", dict);
+    addItem("43", "test2", dict);
+    addItem("44", "test3", dict);
+    addItem("45", "test4", dict);
+    showDict(dict);
     // // init buttons
     // pinMode(button_up, INPUT);
     // pinMode(button_down, INPUT);

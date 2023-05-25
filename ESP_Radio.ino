@@ -33,11 +33,6 @@ int scrolls;
 int title_from = 0;
 int title_to = 16;
 
-uint8_t stationnumber = 0;
-uint8_t actStation = stationnumber;
-const char* stationurl[STATIONS];
-// String stationname[STATIONS];
-// Dict* stations = NULL;
 Item* currentStation = NULL;
 
 int button_up = 35;
@@ -73,21 +68,8 @@ void audio_info(const char *info){
 }
 
 void audio_showstreamtitle(const char *info){
-    // while(1)
-    // if (millis() - waitMillis >= 0 && millis() - waitMillis <= 2000){
-    //     waitMillis = millis();
-    // }
-    // lcd.clear();
     streamtitle = info;
-    // infotextLen = streamtitle.length();
-    // show_text(0, 1, streamtitle.substring(0,infotextLen));
-    // lcd.clear();
 }
-
-// void audio_showstation(const char *info){
-//     delay(300);
-//     show_text(0, 0, stationname[stationnumber]);
-// }
 
 
 // init functions
@@ -373,11 +355,6 @@ void setup() {
     audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
     audio.connecttohost(firstStation->value);
 
-    //display menu
-    // Item* secondStation = (Item*) firstStation->next;
-    // displayView[0] = firstStation->key;
-    // displayView[1] = secondStation->key;
-
     show_station_loop(firstStation);
 
     // start audio loop
@@ -398,7 +375,6 @@ void loop() {
         || button_down_is_pressed 
         || button_enter_is_pressed 
         || millis() - menuMillis >= 0 && millis() - menuMillis <= 2000){
-        // menu_loop();
         // menuLoop;
     } else {
         if(currentStation != NULL){

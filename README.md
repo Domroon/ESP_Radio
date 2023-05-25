@@ -35,10 +35,23 @@ https://github.com/coderholic/pyradio#features
     
     arduino-cli core install esp32:esp32
 
+## Install Arduino Libraries
+
+    sudo nano /home/domroon/.arduino15/arduino-cli.yaml
+    set enable_unsafe_install to true
+
+    arduino-cli lib install --git-url https://github.com/schreibfaul1/ESP32-audioI2S.git
+    arduino-cli lib install --git-url https://github.com/johnrickman/LiquidCrystal_I2C.git
+
+## arduino-cli doc
+
+    https://arduino.github.io/arduino-cli/0.20/commands/arduino-cli_lib_install/
+
 ## Compile and Upload Sketch
 
     arduino-cli compile --fqbn esp32:esp32:nodemcu-32s MyFirstSketch.ino
     arduino-cli upload -p /dev/ttyUSB0 --fqbn esp32:esp32:nodemcu-32s MyFirstSketch.ino
+
 
 ## Serial Monitor
 
@@ -58,6 +71,8 @@ https://copyprogramming.com/howto/python-code-for-internet-radio-streaming-a-com
 ## Display
 https://github.com/johnrickman/LiquidCrystal_I2C
 
+## SD Card Reader
+https://randomnerdtutorials.com/esp32-microsd-card-arduino/
 
 ## Arduino String Operationen
 https://arduinogetstarted.com/de/reference/arduino-string-remove

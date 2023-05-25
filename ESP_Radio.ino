@@ -335,44 +335,46 @@ void show_station_loop() {
 void setup() {
     Serial.begin(115200);
     bool sdCardMounted = initSD();
+    Dict* stations = NULL;
     if(sdCardMounted){
-        Dict* stations = loadRadioStations();
+        stations = loadRadioStations();
     }
-    // // init buttons
-    // pinMode(button_up, INPUT);
-    // pinMode(button_down, INPUT);
-    // pinMode(button_enter, INPUT);
-
-    // lcd.init();                      
-    // lcd.backlight();
     
-    // show_text(0, 0, "ESP Radio");
-    // show_text(0, 1, "Connect to WLAN");
+    // init buttons
+    pinMode(button_up, INPUT);
+    pinMode(button_down, INPUT);
+    pinMode(button_enter, INPUT);
 
-    // menuMillis = -2000;
-    // displayMillis = millis();
-    // initWiFi();
+    lcd.init();                      
+    lcd.backlight();
     
-    // audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
-    // // audio.setVolume(4);
-    // // audio.connecttohost("http://wdr-1live-live.icecast.wdr.de/wdr/1live/live/mp3/128/stream.mp3");
+    show_text(0, 0, "ESP Radio");
+    show_text(0, 1, "Connect to WLAN");
+
+    menuMillis = -2000;
+    displayMillis = millis();
+    initWiFi();
+    
+    audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
+    // audio.connecttohost("http://wdr-1live-live.icecast.wdr.de/wdr/1live/live/mp3/128/stream.mp3");
     // setup_senderList();
-    // audio.connecttohost(stationurl[stationnumber]);
+    Item* firstStation = getItem("1LIVE", stations);
+    audio.connecttohost(firstStation->value);
 
     // //display menu
     // // displayView[0] = stationname[0];
     // // displayView[1] = stationname[1];
 
-    // // start audio loop
-    // xTaskCreatePinnedToCore(
-    //     runAudioLoop,
-    //     "AudioLoop",
-    //     10000,
-    //     NULL,
-    //     1,
-    //     &audioLoopTask,
-    //     1
-    // );
+    // start audio loop
+    xTaskCreatePinnedToCore(
+        runAudioLoop,
+        "AudioLoop",
+        10000,
+        NULL,
+        1,
+        &audioLoopTask,
+        1
+    );
 }
 
 
@@ -386,4 +388,5 @@ void loop() {
     //     show_station_loop();
     // }
     // check_buttons_loop();
+    delay(1000);
 }

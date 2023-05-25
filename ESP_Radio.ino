@@ -99,16 +99,16 @@ void initWiFi() {
     Serial.println(WiFi.localIP());
 }
 
-void initSD(){
+bool initSD(){
     if(!SD.begin(5)) {
         Serial.println("Card Mount Failed");
-        return;
+        return false;
     }
     uint8_t cardType = SD.cardType();
 
     if(cardType == CARD_NONE){
         Serial.println("No SD card attached");
-        return;
+        return false;
     }
 
     Serial.print("SD Card Type: ");
@@ -124,6 +124,7 @@ void initSD(){
 
     uint64_t cardSize = SD.cardSize() / (1024 * 1024);
     Serial.printf("SD Card Size: %lluMB\n",cardSize);
+    return true;
 }
 
 void initDict(Dict* dict){
@@ -150,6 +151,78 @@ void showDict(Dict* dict){
         Serial.println(currentItem->value);
         currentItem = (Item*) currentItem->next;
     }
+}
+
+Dict* loadRadioStations(){
+    // read line by line and add each line into dict
+    // but first test reading from textfile on SD card
+    Dict* dict = (Dict*) malloc(sizeof(Dict));
+    initDict(dict);
+
+    char path[50] = "/stations.txt";
+    Serial.printf("Reading file: %s\n", path);
+
+    File file = SD.open(path);
+    int bufferLen = 250;
+    int keyLen= 20;
+    int valueLen = 250;
+    char line[bufferLen];
+    char c = NULL;
+    int index = 0;
+    char key[20];
+    char value[250];
+    if(!file){
+        Serial.println("Failed to open file for reading");
+        return NULL;
+    }
+    Serial.println("Read Radio-Stations from file:");
+    while(1){
+        if(!file.available()) {
+            break;
+        }
+        c = NULL;
+        for(int i=0; i<bufferLen; i++){
+            if(c == '\n'){
+                line[i] = '\0';
+                break;
+            }
+            c = file.read();
+            line[i] = c;
+        }
+
+        // split the string into key and value
+
+        // find sign '|'
+        index = 0;
+        for(int i=0; i<bufferLen; i++){
+            if(line[i] == '|'){
+                index = i;
+                break;
+            }
+        }
+
+        if (index == 0){
+            Serial.println("A line dont't have a \"|\" seperator.");
+            return NULL;
+        }
+        // mache einen substring von begin bis zu diesem index (key)
+        for(int i=0; i<index; i++){
+            key[i] = line[i];
+        }
+        key[index] = '\0';
+        // mache einen substring von diesem index bis ende
+        for(int i=0; i<bufferLen; i++){
+            value[i] = line[i+index+1];
+            if(line[i] == '\n'){
+                line[i] = '\0';
+                break;
+            }
+        }
+        addItem(key, value, dict);
+    }
+    file.close();
+    showDict(dict);
+    return dict;
 }
 
 // loop functions
@@ -261,14 +334,10 @@ void show_station_loop() {
 
 void setup() {
     Serial.begin(115200);
-    initSD();
-    Dict* dict = (Dict*) malloc(sizeof(Dict));
-    initDict(dict);
-    addItem("42", "test1", dict);
-    addItem("43", "test2", dict);
-    addItem("44", "test3", dict);
-    addItem("45", "test4", dict);
-    showDict(dict);
+    bool sdCardMounted = initSD();
+    if(sdCardMounted){
+        Dict* stations = loadRadioStations();
+    }
     // // init buttons
     // pinMode(button_up, INPUT);
     // pinMode(button_down, INPUT);

@@ -183,7 +183,7 @@ Dict* loadRadioStations(){
         c = NULL;
         for(int i=0; i<bufferLen; i++){
             if(c == '\n'){
-                line[i] = '\0';
+                line[i-1] = '\0';
                 break;
             }
             c = file.read();

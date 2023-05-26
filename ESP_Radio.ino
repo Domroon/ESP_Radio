@@ -23,9 +23,7 @@ LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars
 
 char ssid[] = "AlphaCentauri";
 char password[] = "6ER6bXskskZ";
-unsigned long menuMillis;
 unsigned long displayMillis;
-unsigned long waitMillis;
 
 String streamtitle;
 int infotextLen;
@@ -33,7 +31,9 @@ int scrolls;
 int title_from = 0;
 int title_to = 16;
 
+Dict* stations = NULL;
 Item* currentStation = NULL;
+Item* firstStation = NULL;
 
 int button_up = 35;
 int button_down = 34;
@@ -44,11 +44,12 @@ bool button_down_is_pressed = false;
 bool button_enter_is_pressed = false;
 
 // Display Menu
-String displayView[2];
-int top_station = 0;
-int bottom_station = 1;
-int cursor = 0;
-int scrollWaitMillis = 0;
+int streamTitleLenght;
+
+bool inMenu = false;
+unsigned long menuTime = 2001;
+Item* topDisplay = NULL;
+Item* bottomDisplay = NULL;
 
 // Task for Audio Loop
 TaskHandle_t audioLoopTask;
@@ -60,7 +61,6 @@ void runAudioLoop(void* parameter) {
     }
 }
 
-
 // audio functions overwrite
 
 void audio_info(const char *info){
@@ -69,8 +69,11 @@ void audio_info(const char *info){
 
 void audio_showstreamtitle(const char *info){
     streamtitle = info;
+    streamTitleLenght = streamtitle.length();
+    title_from = 0;
+    title_to = 16;
+    scrolls = 0;
 }
-
 
 // init functions
 
@@ -144,8 +147,6 @@ void showDict(Dict* dict){
 }
 
 Dict* loadRadioStations(){
-    // read line by line and add each line into dict
-    // but first test reading from textfile on SD card
     Dict* dict = (Dict*) malloc(sizeof(Dict));
     initDict(dict);
 
@@ -195,12 +196,12 @@ Dict* loadRadioStations(){
             Serial.println("A line dont't have a \"|\" seperator.");
             return NULL;
         }
-        // mache einen substring von begin bis zu diesem index (key)
+        // make a substring from begin through this index (key)
         for(int i=0; i<index; i++){
             key[i] = line[i];
         }
         key[index] = '\0';
-        // mache einen substring von diesem index bis ende
+        // make a substring from this index through the end
         for(int i=0; i<bufferLen; i++){
             value[i] = line[i+index+1];
             if(line[i] == '\n'){
@@ -217,91 +218,7 @@ Dict* loadRadioStations(){
 
 // loop functions
 
-// void menu_loop() {
-//     // if (millis() - menuMillis >= 10000) {
-//     //     audio.connecttohost("http://st01.dlf.de/dlf/01/128/mp3/stream.mp3");
-//     //     menuMillis = millis();
-//     // }
-//     show_text(0, 0, ">");
-//     show_text(1, 0, currentStation->key);
-//     Item* nextStation = (Item*) currentStation->next;
-//     show_text(1, 1, nextStation->key);
-//     if (bottom_station > STATIONS){
-//         top_station = 0;
-//         bottom_station = 1;
-//     }
-//     if (top_station < 0){
-//         top_station = STATIONS - 1;
-//         bottom_station = STATIONS;
-//     }
-
-//     if (button_down_is_pressed
-//         && millis() - scrollWaitMillis >= 200) {
-//         lcd.clear();
-//         top_station++;
-//         bottom_station++;
-//         scrollWaitMillis = millis();
-//     }
-//     if (button_up_is_pressed
-//         && millis() - scrollWaitMillis >= 200) {
-//         lcd.clear();
-//         top_station--;
-//         bottom_station--;
-//         scrollWaitMillis = millis();
-//     }
-//     if (button_enter_is_pressed
-//         && millis() - scrollWaitMillis >= 1000){
-//         lcd.clear();
-//         audio.connecttohost(stationurl[top_station]);
-//         scrollWaitMillis = millis();
-//         delay(1000);
-//     }
-// }
-
-
-void check_buttons_loop() {
-    // Button UP
-    if(digitalRead(button_up) && !button_up_is_pressed){
-        Serial.println("UP button is pressed");
-        button_up_is_pressed = true;
-        delay(200);
-    }
-    if(!digitalRead(button_up) && button_up_is_pressed){
-        Serial.println("UP button has been released");
-        button_up_is_pressed = false;
-        menuMillis = millis();
-        delay(200);
-    }
-
-    // Button DOWN
-    if(digitalRead(button_down) && !button_down_is_pressed){
-        Serial.println("DOWN button is pressed");
-        button_down_is_pressed = true;
-        delay(200);
-    }
-    if(!digitalRead(button_down) && button_down_is_pressed){
-        Serial.println("DOWN button has been released");
-        button_down_is_pressed = false;
-        menuMillis = millis();
-        delay(200);
-    }
-    
-    // Button ENTER
-    if(digitalRead(button_enter) && !button_enter_is_pressed){
-        Serial.println("ENTER button is pressed");
-        button_enter_is_pressed = true;
-        delay(200);
-    }
-    if(!digitalRead(button_enter) && button_enter_is_pressed){
-        Serial.println("ENTER button has been released");
-        button_enter_is_pressed = false;
-        menuMillis = 0;
-    }
-}
-
-
 void show_station_loop(Item* station) {
-    infotextLen = streamtitle.length();
     if(millis() - displayMillis >= 500) {
         show_text(0, 0, station->key);
         show_text(0, 1, "                ");
@@ -313,7 +230,7 @@ void show_station_loop(Item* station) {
         title_to = title_to + 1;
     }
 
-    if (scrolls == infotextLen + 1) {
+    if (scrolls == streamTitleLenght + 1) {
         title_from = 0;
         title_to = 16;
         show_text(0, 1, "                ");
@@ -322,17 +239,15 @@ void show_station_loop(Item* station) {
     }
 }
 
-
-
 void setup() {
     // Stations init
     bool sdCardMounted = initSD();
-    Dict* stations = NULL;
-    Item* firstStation = NULL;
     if(sdCardMounted){
         stations = loadRadioStations();
         firstStation = (Item*) stations->firstItem;
         currentStation = firstStation;
+        topDisplay = currentStation;
+        bottomDisplay = (Item*) topDisplay->next;
     }
 
     Serial.begin(115200);
@@ -348,13 +263,12 @@ void setup() {
     show_text(0, 0, "ESP Radio");
     show_text(0, 1, "Connect to WLAN");
 
-    menuMillis = -2000;
-    displayMillis = millis();
     initWiFi();
     
     audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
     audio.connecttohost(firstStation->value);
 
+    displayMillis = 0;
     show_station_loop(firstStation);
 
     // start audio loop
@@ -369,17 +283,79 @@ void setup() {
     );
 }
 
-
 void loop() {
-    if (button_up_is_pressed 
-        || button_down_is_pressed 
-        || button_enter_is_pressed 
-        || millis() - menuMillis >= 0 && millis() - menuMillis <= 2000){
-        // menuLoop;
-    } else {
-        if(currentStation != NULL){
-            show_station_loop(currentStation);
-        }
+    // 1.If any Button is released: Menu View is active
+    // 2.If any Button is released for 2s or Enter Button is pressed: Menu View will deactivated
+    // 3.If Button Down is released while the Menu View is active: Scroll Down
+    // 4.If Menu View is active and Enter Button is pressed: Connect to 
+    //   Radio Station that is on Top
+    // 5.If the Scroll List hits the End: Show first Station on Top
+
+    // Button DOWN
+    if(digitalRead(button_down) && !button_down_is_pressed){
+        button_down_is_pressed = true;
+        Serial.println("DOWN button is pressed");
+        delay(200);
     }
-    check_buttons_loop();
+    if(!digitalRead(button_down) && button_down_is_pressed){
+        button_down_is_pressed = false;
+        inMenu = true;
+        menuTime = millis();
+        topDisplay = (Item*) topDisplay->next;
+        if (topDisplay == NULL) {
+            topDisplay = firstStation;
+        }
+        bottomDisplay = (Item*) topDisplay->next;
+        lcd.clear();
+        Serial.println("DOWN button has been released");
+        Serial.println("In Menu");
+    }
+    
+    // Button ENTER
+    if(digitalRead(button_enter) && !button_enter_is_pressed){
+        button_enter_is_pressed = true;
+        Serial.println("ENTER button is pressed");
+        delay(200);
+    }
+    if(!digitalRead(button_enter) && button_enter_is_pressed){
+        button_enter_is_pressed = false;
+        if (inMenu){
+            currentStation = (Item*) getItem(topDisplay->key, stations);
+            lcd.clear();
+            show_text(0, 0, "Connecting to");
+            show_text(0, 1, currentStation->key);
+            audio.connecttohost(currentStation->value);
+            delay(1000);
+            Serial.print("streamtitle: ");
+            Serial.println(streamtitle);
+            lcd.clear();
+            menuTime = 0;
+            inMenu = false;
+        }
+        Serial.println("ENTER button has been released");
+    }
+
+    if(millis() - menuTime > 2000 && millis() - menuTime <= 2100){
+        lcd.clear();
+        Serial.println("Menu Time is up");
+        Serial.println(menuTime);
+        topDisplay = firstStation;
+        bottomDisplay = (Item*) topDisplay->next;
+        inMenu = false;
+    }
+
+    if (currentStation == NULL) {
+        Serial.println("Current Station do not have a value!");
+        delay(2000);
+    }
+
+    if(currentStation != NULL && !inMenu){
+        show_station_loop(currentStation);
+    }
+
+    if(inMenu){
+        show_text(0, 0, ">");
+        show_text(1, 0, topDisplay->key);
+        show_text(0, 1, bottomDisplay->key);
+    }
 }

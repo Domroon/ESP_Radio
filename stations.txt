@@ -1,0 +1,18 @@
+1LIVE|http://wdr-1live-live.icecast.wdr.de/wdr/1live/live/mp3/128/stream.mp3
+1LIVE diggi|http://wdr-1live-diggi.icecast.wdr.de/wdr/1live/diggi/mp3/128/stream.mp3
+WDR Cosmo|http://wdr-cosmo-live.icecast.wdr.de/wdr/cosmo/live/mp3/128/stream.mp3
+WDR2|http://wdr-wdr2-rheinruhr.icecast.wdr.de/wdr/wdr2/rheinruhr/mp3/128/stream.mp3
+Radio Bollerwagen|https://ffn-stream19.radiohost.de/radiobollerwagen_mp3-192?ref=radioplayer&listenerid=31363233323633323031-323030333a64653a343731363a3730313a623731343a346664383a313761363a39386165-3537373636-4d6f7a696c6c612f352e3020285831313b205562
+AIDA Radio|https://aidaradio.de/AIDAradio.m3u
+Deutschlandfunk|http://st01.dlf.de/dlf/01/128/mp3/stream.mp3
+Deutschlandf Nova|http://st03.dlf.de/dlf/03/128/mp3/stream.mp3
+Radio BOB!|http://streams.radiobob.de/bob-classicrock/mp3-192/streams.radiobob.de/
+N-JOY|http://www.ndr.de/resources/metadaten/audio/m3u/n-joy.m3u
+OLDIE Antenne|https://s1-webradio.oldie-antenne.de/oldie-antenne?aw_0_1st.playerid=OldieAntenneWebPlayer
+sunshine live|http://stream.sunshine-live.de/live/mp3-192/stream.sunshine-live.de/
+absolut relax|https://edge56.live-sm.absolutradio.de/absolut-relax/stream/mp3
+YouFM|https://dispatcher.rndfnk.com/hr/youfm/live/mp3/high
+Schwarzwaldradio|https://frontend.streamonkey.net/fho-schwarzwaldradiolive/mp3-stream.m3u
+80s80s|http://streams.80s80s.de/web/mp3-192/streams.80s80s.de/
+RockAntenne|http://mp3channels.webradio.rockantenne.de/rockantenne
+HouseTime.FM|https://listen.housetime.fm/aac-hd.pls

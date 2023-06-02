@@ -38,10 +38,14 @@ Item* firstStation = NULL;
 int button_up = 35;
 int button_down = 34;
 int button_enter = 39;
+int button_res_1 = 32;
+int button_res_2 = 33;
 
 bool button_up_is_pressed = false;
 bool button_down_is_pressed = false;
 bool button_enter_is_pressed = false;
+bool button_res_1_is_pressed = false;
+bool button_res_2_is_pressed = false;
 
 // Display Menu
 int streamTitleLenght;
@@ -256,6 +260,8 @@ void setup() {
     pinMode(button_up, INPUT);
     pinMode(button_down, INPUT);
     pinMode(button_enter, INPUT);
+    pinMode(button_res_1, INPUT);
+    pinMode(button_res_2, INPUT);
 
     lcd.init();                      
     lcd.backlight();
@@ -310,6 +316,17 @@ void loop() {
         Serial.println("DOWN button has been released");
         Serial.println("In Menu");
     }
+
+    // Button UP
+    if(digitalRead(button_up) && !button_up_is_pressed){
+        button_up_is_pressed = true;
+        Serial.println("UP button is pressed");
+        delay(200);
+    }
+    if(!digitalRead(button_up) && button_up_is_pressed){
+        button_up_is_pressed = false;
+        Serial.println("UP button has been released");
+    }
     
     // Button ENTER
     if(digitalRead(button_enter) && !button_enter_is_pressed){
@@ -334,6 +351,29 @@ void loop() {
         }
         Serial.println("ENTER button has been released");
     }
+
+    // Button RES1
+    if(digitalRead(button_res_1) && !button_res_1_is_pressed){
+        button_res_1_is_pressed = true;
+        Serial.println("RES1 button is pressed");
+        delay(200);
+    }
+    if(!digitalRead(button_res_1) && button_res_1_is_pressed){
+        button_res_1_is_pressed = false;
+        Serial.println("RES1 button has been released");
+    }
+
+    // Button RES2
+    if(digitalRead(button_res_2) && !button_res_2_is_pressed){
+        button_res_2_is_pressed = true;
+        Serial.println("RES2 button is pressed");
+        delay(200);
+    }
+    if(!digitalRead(button_res_2) && button_res_2_is_pressed){
+        button_res_2_is_pressed = false;
+        Serial.println("RES2 button has been released");
+    }
+
 
     if(millis() - menuTime > 2000 && millis() - menuTime <= 2100){
         lcd.clear();

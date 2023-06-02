@@ -312,6 +312,10 @@ void show_station_loop(Item* station) {
 }
 
 void setup() {
+    Serial.begin(115200);
+    lcd.init();                      
+    lcd.backlight();
+
     // Stations init
     bool sdCardMounted = initSD();
     Dict* settings = NULL;
@@ -323,20 +327,18 @@ void setup() {
         bottomDisplay = (Item*) topDisplay->next;
         settings = loadConfigFile();
     } else {
+        show_text(0, 0, "No SD Card");
         Serial.println("No SD Card is mounted.");
+        while (1) {
+            delay(10000);
+        }
     }
-
-    Serial.begin(115200);
-    
     // init buttons
     pinMode(button_up, INPUT);
     pinMode(button_down, INPUT);
     pinMode(button_enter, INPUT);
     pinMode(button_res_1, INPUT);
     pinMode(button_res_2, INPUT);
-
-    lcd.init();                      
-    lcd.backlight();
     
     show_text(0, 0, "ESP Radio");
     show_text(0, 1, "Connect to WLAN");

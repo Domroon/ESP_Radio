@@ -21,8 +21,6 @@ extern "C" {
 Audio audio;
 LiquidCrystal_I2C lcd(0x27,20,4);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
-char ssid[] = "AlphaCentauri";
-char password[] = "6ER6bXskskZ";
 unsigned long displayMillis;
 
 String streamtitle;
@@ -81,7 +79,7 @@ void audio_showstreamtitle(const char *info){
 
 // init functions
 
-void initWiFi() {
+void initWiFi(char ssid[20], char password[250]) {
     Serial.begin(115200);
     WiFi.begin(ssid, password);
     Serial.print("Connecting to WiFi: ");
@@ -220,6 +218,76 @@ Dict* loadRadioStations(){
     return dict;
 }
 
+Dict* loadConfigFile(){
+    Dict* dict = (Dict*) malloc(sizeof(Dict));
+    initDict(dict);
+
+    char path[50] = "/settings.conf";
+    Serial.printf("Reading file: %s\n", path);
+
+    File file = SD.open(path);
+    int bufferLen = 250;
+    int keyLen= 20;
+    int valueLen = 250;
+    char line[bufferLen];
+    char c = NULL;
+    int index = 0;
+    char key[20];
+    char value[250];
+    if(!file){
+        Serial.println("Failed to open file for reading");
+        return NULL;
+    }
+    Serial.println("Read Settings from file:");
+    while(1){
+        if(!file.available()) {
+            break;
+        }
+        c = NULL;
+        for(int i=0; i<bufferLen; i++){
+            if(c == '\n'){
+                line[i-1] = '\0';
+                break;
+            }
+            c = file.read();
+            line[i] = c;
+        }
+
+        // split the string into key and value
+
+        // find sign '|'
+        index = 0;
+        for(int i=0; i<bufferLen; i++){
+            if(line[i] == '|'){
+                index = i;
+                break;
+            }
+        }
+
+        if (index == 0){
+            Serial.println("A line dont't have a \"|\" seperator.");
+            return NULL;
+        }
+        // make a substring from begin through this index (key)
+        for(int i=0; i<index; i++){
+            key[i] = line[i];
+        }
+        key[index] = '\0';
+        // make a substring from this index through the end
+        for(int i=0; i<bufferLen; i++){
+            value[i] = line[i+index+1];
+            if(line[i] == '\n'){
+                line[i] = '\0';
+                break;
+            }
+        }
+        addItem(key, value, dict);
+    }
+    file.close();
+    showDict(dict);
+    return dict;
+}
+
 // loop functions
 
 void show_station_loop(Item* station) {
@@ -246,12 +314,16 @@ void show_station_loop(Item* station) {
 void setup() {
     // Stations init
     bool sdCardMounted = initSD();
+    Dict* settings = NULL;
     if(sdCardMounted){
         stations = loadRadioStations();
         firstStation = (Item*) stations->firstItem;
         currentStation = firstStation;
         topDisplay = currentStation;
         bottomDisplay = (Item*) topDisplay->next;
+        settings = loadConfigFile();
+    } else {
+        Serial.println("No SD Card is mounted.");
     }
 
     Serial.begin(115200);
@@ -269,7 +341,15 @@ void setup() {
     show_text(0, 0, "ESP Radio");
     show_text(0, 1, "Connect to WLAN");
 
-    initWiFi();
+    Item* ssid = getItem("SSID", settings);
+    Item* password = getItem("Password", settings);
+    if (ssid != NULL && password != NULL){
+        initWiFi(ssid->value, password->value);
+    } else {
+        lcd.clear();
+        show_text(0, 0, "Config Error");
+    }
+    
     
     audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
     audio.connecttohost(firstStation->value);

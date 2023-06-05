@@ -1,14 +1,14 @@
 #include <stdlib.h>
 #include <WiFi.h>
-#include <Audio.h>
-#include <LiquidCrystal_I2C.h>
+#include <Audio.h>                  // https://github.com/schreibfaul1/ESP32-audioI2S.git
+#include <LiquidCrystal_I2C.h>      // https://github.com/johnrickman/LiquidCrystal_I2C.git
 
 #include "FS.h"
 #include "SD.h"
 #include "SPI.h"
 
 extern "C" {
-  #include "dict.h"
+  #include "dict.h"                 // https://github.com/Domroon/data_structures
 }
 
 

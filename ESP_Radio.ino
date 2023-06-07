@@ -59,6 +59,13 @@ Item* bottomDisplay = NULL;
 TaskHandle_t audioLoopTask;
 TaskHandle_t showStreamTitle;
 
+// Settings Menu
+String settings[2] = {
+    "Single Mode",
+    "Multi Mode"
+};
+int settingsCurserPos = 0;
+
 void runAudioLoop(void* parameter) {
     while(1){
         audio.loop();
@@ -329,16 +336,31 @@ void check_buttons(){
     }
     if(!digitalRead(button_down) && button_down_is_pressed){
         button_down_is_pressed = false;
-        inMenu = true;
-        menuTime = millis();
-        topDisplay = (Item*) topDisplay->next;
-        if (topDisplay == NULL) {
-            topDisplay = firstStation;
+
+        if (!inSettingsMenu) {
+            inMenu = true;
+            menuTime = millis();
+            topDisplay = (Item*) topDisplay->next;
+            if (topDisplay == NULL) {
+                topDisplay = firstStation;
+            }
+            bottomDisplay = (Item*) topDisplay->next;
+            lcd.clear();
+            Serial.println("In Menu");
         }
-        bottomDisplay = (Item*) topDisplay->next;
-        lcd.clear();
+        
+        // SettingsMenu
+        if(!inMenu && inSettingsMenu){
+            settingsMenuTime = millis();
+            if(settingsCurserPos == 0){
+                settingsCurserPos = 1;
+            } else {
+                settingsCurserPos = 0;
+            }
+            lcd.clear();
+        }
+
         Serial.println("DOWN button has been released");
-        Serial.println("In Menu");
     }
 
     // Button UP
@@ -382,6 +404,7 @@ void check_buttons(){
         inSettingsMenu = true;
         settingsMenuTime = millis();
         Serial.println("RES1 button is pressed");
+        lcd.clear();
         delay(200);
     }
     if(!digitalRead(button_res_1) && button_res_1_is_pressed){
@@ -413,7 +436,9 @@ void check_menu_times(){
     }
 
     // Check for Settings Menu Time
-    if(millis() - menuTime > 2000 && millis() - menuTime <= 2100){
+    if(millis() - settingsMenuTime> 2000 && millis() - settingsMenuTime <= 2100){
+        lcd.clear();
+        Serial.println("Settings Menu Time is up");
         inSettingsMenu = false;
     }
 }
@@ -487,13 +512,19 @@ void loop() {
         delay(2000);
     }
 
-    if(currentStation != NULL && !inMenu){
+    if(currentStation != NULL && !inMenu && !inSettingsMenu){
         show_station_loop(currentStation);
     }
 
-    if(inMenu){
+    if(inMenu && !inSettingsMenu){
         show_text(0, 0, ">");
         show_text(1, 0, topDisplay->key);
         show_text(0, 1, bottomDisplay->key);
+    }
+
+    if(inSettingsMenu && !inMenu){
+        show_text(0, settingsCurserPos, ">");
+        show_text(1, 0, settings[0]);
+        show_text(1, 1, settings[1]);
     }
 }

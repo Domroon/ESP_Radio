@@ -49,7 +49,9 @@ bool button_res_2_is_pressed = false;
 int streamTitleLenght;
 
 bool inMenu = false;
+bool inSettingsMenu = false;
 unsigned long menuTime = 2001;
+unsigned long settingsMenuTime = 2001;
 Item* topDisplay = NULL;
 Item* bottomDisplay = NULL;
 
@@ -311,67 +313,7 @@ void show_station_loop(Item* station) {
     }
 }
 
-void setup() {
-    Serial.begin(115200);
-    lcd.init();                      
-    lcd.backlight();
-
-    // Stations init
-    bool sdCardMounted = initSD();
-    Dict* settings = NULL;
-    if(sdCardMounted){
-        stations = loadRadioStations();
-        firstStation = (Item*) stations->firstItem;
-        currentStation = firstStation;
-        topDisplay = currentStation;
-        bottomDisplay = (Item*) topDisplay->next;
-        settings = loadConfigFile();
-    } else {
-        show_text(0, 0, "No SD Card");
-        Serial.println("No SD Card is mounted.");
-        while (1) {
-            delay(10000);
-        }
-    }
-    // init buttons
-    pinMode(button_up, INPUT);
-    pinMode(button_down, INPUT);
-    pinMode(button_enter, INPUT);
-    pinMode(button_res_1, INPUT);
-    pinMode(button_res_2, INPUT);
-    
-    show_text(0, 0, "ESP Radio");
-    show_text(0, 1, "Connect to WLAN");
-
-    Item* ssid = getItem("SSID", settings);
-    Item* password = getItem("Password", settings);
-    if (ssid != NULL && password != NULL){
-        initWiFi(ssid->value, password->value);
-    } else {
-        lcd.clear();
-        show_text(0, 0, "Config Error");
-    }
-    
-    
-    audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
-    audio.connecttohost(firstStation->value);
-
-    displayMillis = 0;
-    show_station_loop(firstStation);
-
-    // start audio loop
-    xTaskCreatePinnedToCore(
-        runAudioLoop,
-        "AudioLoop",
-        10000,
-        NULL,
-        1,
-        &audioLoopTask,
-        1
-    );
-}
-
-void loop() {
+void check_buttons(){
     // 1.If any Button is released: Menu View is active
     // 2.If any Button is released for 2s or Enter Button is pressed: Menu View will deactivated
     // 3.If Button Down is released while the Menu View is active: Scroll Down
@@ -437,6 +379,8 @@ void loop() {
     // Button RES1
     if(digitalRead(button_res_1) && !button_res_1_is_pressed){
         button_res_1_is_pressed = true;
+        inSettingsMenu = true;
+        settingsMenuTime = millis();
         Serial.println("RES1 button is pressed");
         delay(200);
     }
@@ -455,8 +399,10 @@ void loop() {
         button_res_2_is_pressed = false;
         Serial.println("RES2 button has been released");
     }
+}
 
-
+void check_menu_times(){
+    // check for Menu Time
     if(millis() - menuTime > 2000 && millis() - menuTime <= 2100){
         lcd.clear();
         Serial.println("Menu Time is up");
@@ -466,6 +412,76 @@ void loop() {
         inMenu = false;
     }
 
+    // Check for Settings Menu Time
+    if(millis() - menuTime > 2000 && millis() - menuTime <= 2100){
+        inSettingsMenu = false;
+    }
+}
+
+void setup() {
+    Serial.begin(115200);
+    lcd.init();                      
+    lcd.backlight();
+
+    // Stations init
+    bool sdCardMounted = initSD();
+    Dict* settings = NULL;
+    if(sdCardMounted){
+        stations = loadRadioStations();
+        firstStation = (Item*) stations->firstItem;
+        currentStation = firstStation;
+        topDisplay = currentStation;
+        bottomDisplay = (Item*) topDisplay->next;
+        settings = loadConfigFile();
+    } else {
+        show_text(0, 0, "No SD Card");
+        Serial.println("No SD Card is mounted.");
+        while (1) {
+            delay(10000);
+        }
+    }
+    // init buttons
+    pinMode(button_up, INPUT);
+    pinMode(button_down, INPUT);
+    pinMode(button_enter, INPUT);
+    pinMode(button_res_1, INPUT);
+    pinMode(button_res_2, INPUT);
+    
+    show_text(0, 0, "ESP Radio");
+    show_text(0, 1, "Connect to WLAN");
+
+    Item* ssid = getItem("SSID", settings);
+    Item* password = getItem("Password", settings);
+    if (ssid != NULL && password != NULL){
+        initWiFi(ssid->value, password->value);
+    } else {
+        lcd.clear();
+        show_text(0, 0, "Config Error");
+    }
+    
+    
+    audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
+    audio.connecttohost(firstStation->value);
+
+    displayMillis = 0;
+    show_station_loop(firstStation);
+
+    // start audio loop
+    xTaskCreatePinnedToCore(
+        runAudioLoop,
+        "AudioLoop",
+        10000,
+        NULL,
+        1,
+        &audioLoopTask,
+        1
+    );
+}
+
+void loop() {
+    check_buttons();
+    check_menu_times();
+    
     if (currentStation == NULL) {
         Serial.println("Current Station do not have a value!");
         delay(2000);

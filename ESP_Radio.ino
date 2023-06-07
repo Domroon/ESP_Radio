@@ -50,8 +50,10 @@ int streamTitleLenght;
 
 bool inMenu = false;
 bool inSettingsMenu = false;
+bool inMultiMenu = false;
 unsigned long menuTime = 2001;
 unsigned long settingsMenuTime = 2001;
+unsigned long multiMenutime = 2001;
 Item* topDisplay = NULL;
 Item* bottomDisplay = NULL;
 
@@ -64,7 +66,14 @@ String settings[2] = {
     "Single Mode",
     "Multi Mode"
 };
+String multiModes[2] = {
+    "Master",
+    "Slave"
+};
 int settingsCurserPos = 0;
+bool master = false;
+bool slave = false;
+
 
 void runAudioLoop(void* parameter) {
     while(1){
@@ -350,8 +359,19 @@ void check_buttons(){
         }
         
         // SettingsMenu
-        if(!inMenu && inSettingsMenu){
+        if(!inMenu && inSettingsMenu && !inMultiMenu){
             settingsMenuTime = millis();
+            if(settingsCurserPos == 0){
+                settingsCurserPos = 1;
+            } else {
+                settingsCurserPos = 0;
+            }
+            lcd.clear();
+        }
+
+        // MultiMenu
+        if(!inMenu && inMultiMenu && !inSettingsMenu){
+            multiMenutime = millis();
             if(settingsCurserPos == 0){
                 settingsCurserPos = 1;
             } else {
@@ -382,7 +402,7 @@ void check_buttons(){
     }
     if(!digitalRead(button_enter) && button_enter_is_pressed){
         button_enter_is_pressed = false;
-        if (inMenu){
+        if (inMenu && !inSettingsMenu){
             currentStation = (Item*) getItem(topDisplay->key, stations);
             lcd.clear();
             show_text(0, 0, "Connecting to");
@@ -394,6 +414,43 @@ void check_buttons(){
             lcd.clear();
             menuTime = 0;
             inMenu = false;
+        }
+
+        if (inMultiMenu && !inMenu && !inSettingsMenu){
+            if (settingsCurserPos == 0){
+                master = true;
+                slave = false;
+                multiMenutime = 0;
+                inMultiMenu = false;
+                Serial.println("Master Mode");
+            }
+            if (settingsCurserPos == 1){
+                slave = true;
+                master = false;
+                multiMenutime = 0;
+                inMultiMenu = false;
+                Serial.println("Slave Mode");
+            }
+        }
+
+        if (inSettingsMenu && !inMenu && !inMultiMenu){
+            // Enter Single Mode 
+            if (settingsCurserPos == 0){
+                lcd.clear();
+                settingsMenuTime = 0;
+                inSettingsMenu = false;
+                master = false;
+                slave = false;
+            }
+            // Show Multi Mode Menu
+            if (settingsCurserPos == 1){
+                Serial.println("Show Multi Mode Menu");
+                lcd.clear();
+                settingsMenuTime = 0;
+                inSettingsMenu = false;
+                inMultiMenu = true;
+                multiMenutime = millis();
+            }
         }
         Serial.println("ENTER button has been released");
     }
@@ -436,10 +493,17 @@ void check_menu_times(){
     }
 
     // Check for Settings Menu Time
-    if(millis() - settingsMenuTime> 2000 && millis() - settingsMenuTime <= 2100){
+    if(millis() - settingsMenuTime > 2000 && millis() - settingsMenuTime <= 2100){
         lcd.clear();
         Serial.println("Settings Menu Time is up");
         inSettingsMenu = false;
+    }
+
+    // Check for Multi Menu Time
+    if(millis() - multiMenutime > 2000 && millis() - multiMenutime <= 2100){
+        lcd.clear();
+        Serial.println("Multi Menu Time is up");
+        inMultiMenu= false;
     }
 }
 
@@ -512,19 +576,34 @@ void loop() {
         delay(2000);
     }
 
-    if(currentStation != NULL && !inMenu && !inSettingsMenu){
+    if(currentStation != NULL && !inMenu && !inSettingsMenu && !inMultiMenu){
         show_station_loop(currentStation);
     }
 
-    if(inMenu && !inSettingsMenu){
+    // show different Menus
+    if(inMenu && !inSettingsMenu && !inMultiMenu){
         show_text(0, 0, ">");
         show_text(1, 0, topDisplay->key);
         show_text(0, 1, bottomDisplay->key);
     }
 
-    if(inSettingsMenu && !inMenu){
+    if(inSettingsMenu && !inMenu && !inMultiMenu){
         show_text(0, settingsCurserPos, ">");
         show_text(1, 0, settings[0]);
         show_text(1, 1, settings[1]);
+    }
+
+    if(inMultiMenu && !inMenu && !inSettingsMenu){
+        show_text(0, settingsCurserPos, ">");
+        show_text(1, 0, multiModes[0]);
+        show_text(1, 1, multiModes[1]);
+    }
+
+    if(master) {
+        Serial.println("Master");
+    }
+    
+    if(slave) {
+        Serial.println("Slave");
     }
 }

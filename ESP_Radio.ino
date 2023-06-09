@@ -346,7 +346,7 @@ void check_buttons(){
     if(!digitalRead(button_down) && button_down_is_pressed){
         button_down_is_pressed = false;
 
-        if (!inSettingsMenu) {
+        if (!inSettingsMenu && !inMultiMenu) {
             inMenu = true;
             menuTime = millis();
             topDisplay = (Item*) topDisplay->next;

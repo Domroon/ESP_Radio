@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <Audio.h>                  // https://github.com/schreibfaul1/ESP32-audioI2S.git
 #include <LiquidCrystal_I2C.h>      // https://github.com/johnrickman/LiquidCrystal_I2C.git
+#include "ESPAsyncWebServer.h"      // 
 
 #include "FS.h"
 #include "SD.h"
@@ -74,6 +75,7 @@ int settingsCurserPos = 0;
 bool master = false;
 bool slave = false;
 
+AsyncWebServer server(80);
 
 void runAudioLoop(void* parameter) {
     while(1){
@@ -423,6 +425,9 @@ void check_buttons(){
                 multiMenutime = 0;
                 inMultiMenu = false;
                 Serial.println("Master Mode");
+                // Start the HTTP Server
+                Serial.println("Start HTTP Server");
+                server.begin();
             }
             if (settingsCurserPos == 1){
                 slave = true;
@@ -441,6 +446,9 @@ void check_buttons(){
                 inSettingsMenu = false;
                 master = false;
                 slave = false;
+                // Stop HTTP Server
+                Serial.println("Stop HTTP Server");
+                server.end();
             }
             // Show Multi Mode Menu
             if (settingsCurserPos == 1){
@@ -565,6 +573,27 @@ void setup() {
         &audioLoopTask,
         1
     );
+
+    // set server URLs
+    server.on("/test", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send_P(200, "text/plain", "This is a test :)");
+    });
+
+    server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", String(ESP.getFreeHeap()));
+    });
+
+    server.on("/audio/currentTime", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", String(audio.getAudioCurrentTime()));
+    });
+
+    server.on("/radio/currentStation", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", String(currentStation->key));
+    });
+
+    server.on("/radio/currentLink", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", String(currentStation->value));
+    });
 }
 
 void loop() {
@@ -600,10 +629,10 @@ void loop() {
     }
 
     if(master) {
-        Serial.println("Master");
+        // Serial.println("Master");
     }
     
     if(slave) {
-        Serial.println("Slave");
+        // Serial.println("Slave");
     }
 }

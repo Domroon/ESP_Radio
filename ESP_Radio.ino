@@ -2,7 +2,8 @@
 #include <WiFi.h>
 #include <Audio.h>                  // https://github.com/schreibfaul1/ESP32-audioI2S.git
 #include <LiquidCrystal_I2C.h>      // https://github.com/johnrickman/LiquidCrystal_I2C.git
-#include "ESPAsyncWebServer.h"      // 
+#include "ESPAsyncWebServer.h"      // https://github.com/me-no-dev/ESPAsyncWebServer
+#include <HTTPClient.h>
 
 #include "FS.h"
 #include "SD.h"
@@ -31,8 +32,13 @@ int title_from = 0;
 int title_to = 16;
 
 Dict* stations = NULL;
+Dict* settings = NULL;
 Item* currentStation = NULL;
 Item* firstStation = NULL;
+Item* masterIP = NULL;
+
+String settingsMode[2];
+String multiModes[2];
 
 int button_up = 35;
 int button_down = 34;
@@ -55,6 +61,7 @@ bool inMultiMenu = false;
 unsigned long menuTime = 2001;
 unsigned long settingsMenuTime = 2001;
 unsigned long multiMenutime = 2001;
+unsigned long requestDelayTime = 2001;
 Item* topDisplay = NULL;
 Item* bottomDisplay = NULL;
 
@@ -62,20 +69,20 @@ Item* bottomDisplay = NULL;
 TaskHandle_t audioLoopTask;
 TaskHandle_t showStreamTitle;
 
-// Settings Menu
-String settings[2] = {
-    "Single Mode",
-    "Multi Mode"
-};
-String multiModes[2] = {
-    "Master",
-    "Slave"
-};
 int settingsCurserPos = 0;
 bool master = false;
 bool slave = false;
 
 AsyncWebServer server(80);
+
+// TEST Variables
+String currentStationString;
+char stationString[20];
+char secTimeString[5];
+uint16_t secTime = 0;
+String currentTimeString;
+String stationLink = "http://";
+String currentTimeLink = "http://";
 
 void runAudioLoop(void* parameter) {
     while(1){
@@ -308,6 +315,33 @@ Dict* loadConfigFile(){
     return dict;
 }
 
+String httpGETRequest(String serverName) {
+  WiFiClient client;
+  HTTPClient http;
+    
+  // Your Domain name with URL path or IP address with path
+  http.begin(client, serverName);
+  
+  // Send HTTP POST request
+  int httpResponseCode = http.GET();
+  
+  String payload = "--"; 
+  
+  if (httpResponseCode>0) {
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    payload = http.getString();
+  }
+  else {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
+  }
+  // Free resources
+  http.end();
+
+  return payload;
+}
+
 // loop functions
 
 void show_station_loop(Item* station) {
@@ -410,7 +444,8 @@ void check_buttons(){
             show_text(0, 0, "Connecting to");
             show_text(0, 1, currentStation->key);
             audio.connecttohost(currentStation->value);
-            delay(1000);
+            audio.setDefaults();
+            // delay(1000);
             Serial.print("streamtitle: ");
             Serial.println(streamtitle);
             lcd.clear();
@@ -434,7 +469,13 @@ void check_buttons(){
                 master = false;
                 multiMenutime = 0;
                 inMultiMenu = false;
+                
                 Serial.println("Slave Mode");
+                currentTimeLink.concat(masterIP->value);
+                currentTimeLink.concat("/audio/currentTime");
+
+                stationLink.concat(masterIP->value);
+                stationLink.concat("/radio/currentStation");
             }
         }
 
@@ -520,9 +561,10 @@ void setup() {
     lcd.init();                      
     lcd.backlight();
 
+    audio.setBufsize(4000, 4000);
+
     // Stations init
     bool sdCardMounted = initSD();
-    Dict* settings = NULL;
     if(sdCardMounted){
         stations = loadRadioStations();
         firstStation = (Item*) stations->firstItem;
@@ -537,6 +579,13 @@ void setup() {
             delay(10000);
         }
     }
+
+    // Init Settings Menu
+    settingsMode[0] = "Single Mode";
+    settingsMode[1] = "Multi Mode";
+    multiModes[0] = "Master";
+    multiModes[1] = "Slave";
+
     // init buttons
     pinMode(button_up, INPUT);
     pinMode(button_down, INPUT);
@@ -556,6 +605,7 @@ void setup() {
         show_text(0, 0, "Config Error");
     }
     
+    masterIP = getItem("MasterIP", settings);
     
     audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
     audio.connecttohost(firstStation->value);
@@ -618,8 +668,8 @@ void loop() {
 
     if(inSettingsMenu && !inMenu && !inMultiMenu){
         show_text(0, settingsCurserPos, ">");
-        show_text(1, 0, settings[0]);
-        show_text(1, 1, settings[1]);
+        show_text(1, 0, settingsMode[0]);
+        show_text(1, 1, settingsMode[1]);
     }
 
     if(inMultiMenu && !inMenu && !inSettingsMenu){
@@ -632,7 +682,30 @@ void loop() {
         // Serial.println("Master");
     }
     
-    if(slave) {
-        // Serial.println("Slave");
+    if(slave && millis() - requestDelayTime > 10000) {
+        Serial.println("Slave");
+        Serial.print("Master IP: ");
+        Serial.println(masterIP->value);
+        requestDelayTime = millis();
+
+        currentStationString = httpGETRequest(stationLink);
+        Serial.print("stationLink: ");
+        Serial.println(stationLink);
+        
+        
+        currentTimeString = httpGETRequest(currentTimeLink);
+        Serial.print("currentTimeLink: ");
+        Serial.println(currentTimeLink);
+        
+        Serial.print("currentStation: ");
+        Serial.println(currentStationString);
+        Serial.print("currentTime: ");
+        Serial.println(currentTimeString);
+        strcpy(stationString, currentStationString.c_str()); 
+        currentStation = getItem(stationString, stations);
+        audio.connecttohost(currentStation->value);
+        // strcpy(secTimeString, currentTimeString.c_str()); 
+        // secTime = strtoul(secTimeString, NULL, 0);
+        // audio.setAudioPlayPosition(secTime);
     }
 }

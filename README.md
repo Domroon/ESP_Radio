@@ -19,6 +19,7 @@
 
     arduino-cli lib install --git-url https://github.com/schreibfaul1/ESP32-audioI2S.git
     arduino-cli lib install --git-url https://github.com/johnrickman/LiquidCrystal_I2C.git
+    arduino-cli lib install --git-url https://github.com/Domroon/data_structures
 
 ## Compile and Upload Sketch
 

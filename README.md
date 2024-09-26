@@ -15,7 +15,7 @@
 ## Install Arduino Libraries
 
     sudo nano /home/<your-username>/.arduino15/arduino-cli.yaml
-    set enable_unsafe_install to true
+    arduino-cli config set library.enable_unsafe_install true
 
     arduino-cli lib install --git-url https://github.com/schreibfaul1/ESP32-audioI2S.git
     arduino-cli lib install --git-url https://github.com/johnrickman/LiquidCrystal_I2C.git

@@ -22,8 +22,8 @@
 
 ## Compile and Upload Sketch
 
-    arduino-cli compile --fqbn esp32:esp32:nodemcu-32s MyFirstSketch.ino
-    arduino-cli upload -p /dev/ttyUSB0 --fqbn esp32:esp32:nodemcu-32s MyFirstSketch.ino
+    arduino-cli compile --fqbn esp32:esp32:nodemcu-32s ESP_Radio.ino
+    arduino-cli upload -p /dev/ttyUSB0 --fqbn esp32:esp32:nodemcu-32s ESP_Radio.ino
 
 
 ## Serial Monitor
